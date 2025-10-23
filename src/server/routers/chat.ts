@@ -1,21 +1,21 @@
 import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { supabase } from "../../lib/supabaseclient";
+import { supabase } from "../../server/supabase";
 
 export const chatRouter = router({
   send: publicProcedure
-    .input(z.object({ modelTag: z.string(), prompt: z.string(), userId: z.string() }))
+    .input(z.object({ modelTag: z.string(), msg: z.string(), userId: z.string() }))
     .mutation(async ({ input }) => {
-      const { modelTag, prompt, userId } = input;
+      const { modelTag, msg, userId } = input;
 
       await supabase.from("messages").insert({
         user_id: userId,
         model_tag: modelTag,
         role: "user",
-        content: prompt,
+        content: msg,
       });
 
-      const reply = `You said: ${prompt}`;
+      const reply = `You said: ${msg}`;
       await supabase.from("messages").insert({
         user_id: userId,
         model_tag: modelTag,

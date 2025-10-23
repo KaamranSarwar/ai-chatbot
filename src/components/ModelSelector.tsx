@@ -1,3 +1,5 @@
+"use client";
+
 export default function ModelSelector({ models, selected, onChange }: any) {
   return (
     <select

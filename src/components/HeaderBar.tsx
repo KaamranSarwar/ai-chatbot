@@ -7,12 +7,19 @@ export default function HeaderBar({
   selectedModel,
   models,
   onModelChange,
+  onClearChat,
+  clearing = false,
+  msglength
 }: {
   selectedModel: string;
   models: any[];
   onModelChange: (value: string) => void;
+  onClearChat: () => void;
+  clearing?: boolean;
+  msglength?: number;
 }) {
   const router = useRouter();
+  
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -36,6 +43,7 @@ export default function HeaderBar({
           value={selectedModel}
           onChange={(e) => onModelChange(e.target.value)}
           className="border border-gray-300 rounded-md p-1 text-sm bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          disabled={clearing}
         >
           {models.map((m: any) => (
             <option key={m.tag} value={m.tag}>
@@ -45,12 +53,35 @@ export default function HeaderBar({
         </select>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm transition"
-      >
-        Logout
-      </button>
+      {/* Right side - Buttons */}
+      <div className="flex gap-2 items-center">
+        <button
+          onClick={onClearChat}
+          disabled={clearing}
+          className={`${
+            clearing
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+          } px-3 py-1.5 rounded-md text-sm transition ${msglength === 0 ? "hidden" : ""} `}
+        >
+          {clearing ? (
+            <div className="flex items-center gap-1">
+              <span className="h-3 w-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></span>
+              <span>Clearing...</span>
+            </div>
+          ) : (
+            "Clear Chat"
+          )}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          disabled={clearing}
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm transition"
+        >
+          Logout
+        </button>
+      </div>
     </header>
   );
 }
