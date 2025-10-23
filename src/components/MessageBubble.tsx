@@ -29,7 +29,7 @@ export default function MessageBubble({
             : "bg-gray-200 text-gray-900 rounded-bl-none"
         }`}
       >
-        <p className="whitespace-pre-wrap break-words">{content}</p>
+        <p className="whitespace-pre-wrap wrap-break-words">{content}</p>
         {/* {created_at && (
           <span
             className={`text-[10px] absolute bottom-1 right-2 ${

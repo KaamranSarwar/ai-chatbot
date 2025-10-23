@@ -37,4 +37,23 @@ export const chatRouter = router({
         .order("created_at", { ascending: true });
       return data ?? [];
     }),
+
+  clear: publicProcedure
+  .input(z.object({ userId: z.string(), modelTag: z.string() }))
+  .mutation(async ({ input }) => {
+    const { userId,modelTag } = input;
+
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("user_id", userId)
+      .eq("model_tag", modelTag);
+
+    if (error) {
+      console.error("Error clearing chat:", error);
+      throw new Error("Failed to clear chat");
+    }
+
+    return { success: true };
+  }),  
 });

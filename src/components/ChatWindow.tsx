@@ -12,51 +12,42 @@ export default function ChatWindow({ models }: any) {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userLoading, setUserLoading] = useState<boolean>(false);
+
   const [clearing, setClearing] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sendMessageMutation = trpc.chat.send.useMutation();
+  const clearChatMutation = trpc.chat.clear.useMutation();
+
+  const { data, isLoading, refetch } = trpc.chat.history.useQuery(
+    { userId: userId ?? "", modelTag: selectedModel },
+    { enabled: !!userId } // don't run until we know the user
+  );
+  async function getUser() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) setUserId(user.id);
+  }
+  useEffect(() => {
+    setUserLoading(true);
+    getUser();
+    setUserLoading(false);
+  }, []);
 
   useEffect(() => {
-    loadMessages();
-  }, []);
+    if (data) setMessages(data);
+  }, [data]);
+  useEffect(() => {
+    setMessages
+  if (userId) refetch();
+}, [selectedModel]);
+
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  async function loadMessages() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
-
-    if (error) console.error("Error loading messages:", error);
-    else setMessages(data || []);
-  }
-
-  async function saveMessage(role: string, content: string) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase.from("messages").insert([
-      {
-        user_id: user.id,
-        role,
-        content,
-      },
-    ]);
-
-    if (error) console.error("Error saving message:", error);
-  }
-
   async function handleSend() {
     if (!input.trim()) return;
 
@@ -81,10 +72,8 @@ export default function ChatWindow({ models }: any) {
     setLoading(true);
 
     try {
-      // ✅ Call tRPC mutation and wait for reply
       const { reply } = await sendMessageMutation.mutateAsync(newMessage);
 
-      // ✅ Add AI reply to UI immediately after getting result
       setMessages((prev) => [
         ...prev,
         { role: "ai", content: reply, modelTag: selectedModel },
@@ -108,19 +97,19 @@ export default function ChatWindow({ models }: any) {
       return;
     }
 
-    const { error } = await supabase
-      .from("messages")
-      .delete()
-      .eq("user_id", user.id);
-
-    if (error) {
+    try {
+      const { success } = await clearChatMutation.mutateAsync({
+        userId: user.id,
+        modelTag: selectedModel,
+      });
+      if (success) {
+        setMessages([]);
+      }
+    } catch (error) {
       console.error("Error clearing chat:", error);
-    } else {
-      setMessages([]);
+    } finally {
+      setClearing(false);
     }
-
-    // Small delay for smooth UX
-    setTimeout(() => setClearing(false), 600);
   }
 
   return (
@@ -137,10 +126,15 @@ export default function ChatWindow({ models }: any) {
       {/* Chat Body */}
       <div
         className={`flex-1 overflow-y-auto ${
-          messages.length === 0 ? "flex items-center justify-center" : ""
+          messages.length === 0 || isLoading
+            ? "flex items-center justify-center"
+            : ""
         } px-4 py-3 bg-gray-50`}
       >
-        {messages.length === 0 && (
+        {isLoading ? (
+          <p className="text-center text-black">Loading chat history...</p>
+        ) : null}
+        {messages.length === 0 && !isLoading && !userLoading && (
           <p className="text-center text-black">
             Start chatting by typing below 👇
           </p>
@@ -158,13 +152,22 @@ export default function ChatWindow({ models }: any) {
 
       {/* Input */}
       <div className="flex items-center border-t bg-white px-4 py-3">
-        <input
-          type="text"
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault(); // prevent newline
+              handleSend(); // send message
+            }
+          }}
           placeholder="Type your message..."
-          className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-gray-700 
+             focus:outline-none focus:ring-2 focus:ring-blue-500 
+             resize-none overflow-y-auto"
+          rows={1}
         />
+
         <button
           onClick={handleSend}
           className="ml-3 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
