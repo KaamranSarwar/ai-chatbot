@@ -40,26 +40,28 @@ Before you begin, make sure you have:
 
 ## ⚙️ 1. Clone & Install
 
-git clone https://github.com/your-username/ai-chat-app.git
+```bash
+git clone https://github.com/KaamranSarwar/ai-chatbot.git
 cd ai-chat-app
 npm install
 
 🔑 2. Environment Variables
 Create a .env.local file in the project root and add the following:
 
-
+bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key  # optional, if needed for server ops
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key 
+
 ⚠️ Never commit .env.local — it should stay private.
 All secrets are loaded locally and used safely via environment variables.
 
 🗄️ 3. Database Setup
+
 In your Supabase SQL Editor, run the following commands to create the required tables:
 
 🧍‍♂️ models Table
 sql
-Copy code
 create table models (
   id uuid primary key default uuid_generate_v4(),
   tag text not null unique
@@ -67,11 +69,10 @@ create table models (
 Add some example rows:
 
 sql
-Copy code
-insert into models (tag) values ('BERT'), ('RoBERTa'), ('DistilBERT');
+insert into models (tag) values ('gpt-4o'), ('gpt-3.5-turbo'), ('llama-3');
+
 💬 messages Table
 sql
-Copy code
 create table messages (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id),
@@ -94,14 +95,11 @@ Run the development server:
 bash
 Copy code
 npm run dev
-Visit your app:
+Visit your app: http://localhost:3000
 
-arduino
-Copy code
-http://localhost:3000
 🧮 6. Project Structure
 graphql
-Copy code
+
 ai-chat-app/
 │
 ├── src/
