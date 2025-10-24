@@ -5,7 +5,6 @@ import MessageBubble from "./MessageBubble";
 import HeaderBar from "./HeaderBar";
 import { supabase } from "../lib/supabaseclient";
 import { trpc } from "../utils/trpcclient";
-import { se } from "date-fns/locale";
 export default function ChatWindow({ models }: any) {
   const [selectedModel, setSelectedModel] = useState<string>(
     models[0]?.tag || ""
@@ -15,13 +14,11 @@ export default function ChatWindow({ models }: any) {
   const [replyloading, setReplyLoading] = useState(false);
   const [userLoading, setUserLoading] = useState<boolean>(true);
   const [modelLoading, setModelLoading] = useState<boolean>(false);
-
   const [clearing, setClearing] = useState<boolean>(false);
   const [userId, setUserId] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const sendMessageMutation = trpc.chat.send.useMutation();
   const clearChatMutation = trpc.chat.clear.useMutation();
-
   const { data, isLoading, refetch } = trpc.chat.history.useQuery(
     { userId: userId ?? "", modelTag: selectedModel },
     { enabled: !!userId }
@@ -62,11 +59,12 @@ export default function ChatWindow({ models }: any) {
       modelTag: selectedModel,
       msg: input,
       userId: userId,
+      created_at: new Date().toISOString()
     };
 
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: input, modelTag: selectedModel },
+      { role: "user", content: input, modelTag: selectedModel, created_at: new Date().toISOString() },
     ]);
 
     setInput("");
@@ -76,7 +74,7 @@ export default function ChatWindow({ models }: any) {
 
       setMessages((prev) => [
         ...prev,
-        { role: "ai", content: reply, modelTag: selectedModel },
+        { role: "ai", content: reply, modelTag: selectedModel, created_at: new Date().toISOString() },
       ]);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -127,7 +125,7 @@ export default function ChatWindow({ models }: any) {
           <div className="flex flex-col items-center justify-center py-6">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-center text-black">
-              {clearing ? "Deleting Chat " : "Loading chat history..."}
+              {clearing ? "Deleting Chat.... " : "Loading chat history..."}
             </p>
           </div>
         ) : (

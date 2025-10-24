@@ -26,7 +26,7 @@ export default function HeaderBar({
   }
 
   return (
-    <header className="flex items-center justify-between w-full px-5 py-3 bg-white border-b border-gray-200 shadow-sm rounded-t-2xl">
+    <header className="flex flex-col gap-2 md:0 md:flex-row  items-center justify-between w-full px-5 py-3 bg-white border-b border-gray-200 shadow-sm rounded-t-2xl">
       {/* Left side - App title */}
       <div className="flex items-center gap-2">
         <span className="text-xl font-semibold text-gray-800">🤖 AI Chat</span>
@@ -34,7 +34,7 @@ export default function HeaderBar({
 
       {/* Middle - Model selector */}
       <div className="flex items-center gap-2">
-        <label htmlFor="model" className="text-sm text-gray-600">
+        <label htmlFor="model" className="text-md font-bold text-gray-800">
           Model:
         </label>
         <select
