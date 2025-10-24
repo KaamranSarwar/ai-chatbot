@@ -5,24 +5,26 @@ import MessageBubble from "./MessageBubble";
 import HeaderBar from "./HeaderBar";
 import { supabase } from "../lib/supabaseclient";
 import { trpc } from "../utils/trpcclient";
+import { se } from "date-fns/locale";
 export default function ChatWindow({ models }: any) {
   const [selectedModel, setSelectedModel] = useState<string>(
     models[0]?.tag || ""
   );
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [userLoading, setUserLoading] = useState<boolean>(false);
+  const [replyloading, setReplyLoading] = useState(false);
+  const [userLoading, setUserLoading] = useState<boolean>(true);
+  const [modelLoading, setModelLoading] = useState<boolean>(false);
 
-  const [clearing, setClearing] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const sendMessageMutation = trpc.chat.send.useMutation();
   const clearChatMutation = trpc.chat.clear.useMutation();
 
   const { data, isLoading, refetch } = trpc.chat.history.useQuery(
     { userId: userId ?? "", modelTag: selectedModel },
-    { enabled: !!userId } // don't run until we know the user
+    { enabled: !!userId }
   );
   async function getUser() {
     const {
@@ -31,7 +33,6 @@ export default function ChatWindow({ models }: any) {
     if (user) setUserId(user.id);
   }
   useEffect(() => {
-    setUserLoading(true);
     getUser();
     setUserLoading(false);
   }, []);
@@ -40,36 +41,35 @@ export default function ChatWindow({ models }: any) {
     if (data) setMessages(data);
   }, [data]);
   useEffect(() => {
-    setMessages
-  if (userId) refetch();
-}, [selectedModel]);
-
+    if (userId) {
+      setMessages([]);
+      setModelLoading(true);
+      refetch().finally(() => {
+        setMessages(data || []);
+        setModelLoading(false);
+      });
+    }
+  }, [selectedModel]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   async function handleSend() {
     if (!input.trim()) return;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    setReplyLoading(true);
 
     const newMessage = {
       modelTag: selectedModel,
       msg: input,
-      userId: user.id,
+      userId: userId,
     };
 
-    // Add user message locally
     setMessages((prev) => [
       ...prev,
       { role: "user", content: input, modelTag: selectedModel },
     ]);
 
     setInput("");
-    setLoading(true);
 
     try {
       const { reply } = await sendMessageMutation.mutateAsync(newMessage);
@@ -81,29 +81,22 @@ export default function ChatWindow({ models }: any) {
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
-      setLoading(false);
+      setReplyLoading(false);
     }
   }
 
   async function handleClearChat() {
     if (messages.length === 0) return;
     setClearing(true);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setClearing(false);
-      return;
-    }
-
+    setMessages([]);
     try {
       const { success } = await clearChatMutation.mutateAsync({
-        userId: user.id,
+        userId: userId,
         modelTag: selectedModel,
       });
-      if (success) {
-        setMessages([]);
+      if (!success) {
+        setMessages(data || []);
+        console.error("Failed to clear chat on server.");
       }
     } catch (error) {
       console.error("Error clearing chat:", error);
@@ -123,7 +116,6 @@ export default function ChatWindow({ models }: any) {
         msglength={messages.length}
       />
 
-      {/* Chat Body */}
       <div
         className={`flex-1 overflow-y-auto ${
           messages.length === 0 || isLoading
@@ -131,18 +123,25 @@ export default function ChatWindow({ models }: any) {
             : ""
         } px-4 py-3 bg-gray-50`}
       >
-        {isLoading ? (
-          <p className="text-center text-black">Loading chat history...</p>
-        ) : null}
-        {messages.length === 0 && !isLoading && !userLoading && (
-          <p className="text-center text-black">
-            Start chatting by typing below 👇
-          </p>
+        {isLoading || userLoading || modelLoading || clearing ? (
+          <div className="flex flex-col items-center justify-center py-6">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-center text-black">
+              {clearing ? "Deleting Chat " : "Loading chat history..."}
+            </p>
+          </div>
+        ) : (
+          messages.length === 0 && (
+            <p className="text-center text-black">
+              Start chatting by typing below 👇
+            </p>
+          )
         )}
+
         {messages.map((msg, i) => (
           <MessageBubble key={i} {...msg} />
         ))}
-        {loading && (
+        {replyloading && (
           <div className="text-sm text-gray-500 italic mt-2">
             AI is thinking...
           </div>
@@ -150,15 +149,16 @@ export default function ChatWindow({ models }: any) {
         <div ref={scrollRef}></div>
       </div>
 
-      {/* Input */}
       <div className="flex items-center border-t bg-white px-4 py-3">
         <textarea
           value={input}
+          disabled={replyloading}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault(); // prevent newline
-              handleSend(); // send message
+              e.preventDefault();
+
+              handleSend();
             }
           }}
           placeholder="Type your message..."

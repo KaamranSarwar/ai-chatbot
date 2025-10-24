@@ -9,7 +9,7 @@ export default function HeaderBar({
   onModelChange,
   onClearChat,
   clearing = false,
-  msglength
+  msglength,
 }: {
   selectedModel: string;
   models: any[];
@@ -19,7 +19,6 @@ export default function HeaderBar({
   msglength?: number;
 }) {
   const router = useRouter();
-  
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -58,20 +57,11 @@ export default function HeaderBar({
         <button
           onClick={onClearChat}
           disabled={clearing}
-          className={`${
-            clearing
-              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-              : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-          } px-3 py-1.5 rounded-md text-sm transition ${msglength === 0 ? "hidden" : ""} `}
+          className={`bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-md text-sm transition ${
+            msglength === 0 ? "opacity-0 pointer-events-none" : ""
+          } `}
         >
-          {clearing ? (
-            <div className="flex items-center gap-1">
-              <span className="h-3 w-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></span>
-              <span>Clearing...</span>
-            </div>
-          ) : (
-            "Clear Chat"
-          )}
+          Delete Chat
         </button>
 
         <button
