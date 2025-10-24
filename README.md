@@ -48,7 +48,6 @@ npm install
 🔑 2. Environment Variables
 Create a .env.local file in the project root and add the following:
 
-bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key 
@@ -61,18 +60,16 @@ All secrets are loaded locally and used safely via environment variables.
 In your Supabase SQL Editor, run the following commands to create the required tables:
 
 🧍‍♂️ models Table
-sql
+
 create table models (
   id uuid primary key default uuid_generate_v4(),
   tag text not null unique
 );
 Add some example rows:
-
-sql
 insert into models (tag) values ('gpt-4o'), ('gpt-3.5-turbo'), ('llama-3');
 
 💬 messages Table
-sql
+
 create table messages (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id),
@@ -84,6 +81,7 @@ create table messages (
 💡 Make sure created_at is of type timestamptz for accurate timezone handling.
 
 🧩 4. Run Supabase Auth (Email Only)
+
 By default, Supabase enables multiple providers (Google, GitHub, etc.).
 To allow only Email + Password, go to:
 
@@ -92,47 +90,17 @@ Supabase Dashboard → Authentication → Providers → Disable all others.
 🖥️ 5. Start the App
 Run the development server:
 
-bash
-Copy code
+
 npm run dev
 Visit your app: http://localhost:3000
 
-🧮 6. Project Structure
-graphql
 
-ai-chat-app/
-│
-├── src/
-│   ├── app/
-│   │   ├── auth/                # Auth page (Supabase UI)
-│   │   ├── chat/                # Main chat page
-│   │   ├── layout.tsx           # Root layout
-│   │   └── page.tsx             # Entry point redirect logic
-│   │
-│   ├── components/
-│   │   ├── ChatWindow.tsx       # Core chat UI
-│   │   ├── MessageBubble.tsx    # Single message component
-│   │   └── LoadingSpinner.tsx   # Spinner animation
-│   │
-│   ├── server/
-│   │   ├── routers/
-│   │   │   ├── chat.ts          # Chat tRPC routes (send, history, clear)
-│   │   │   └── models.ts        # Model fetching tRPC route
-│   │   └── index.ts             # Main tRPC router
-│   │
-│   ├── utils/
-│   │   └── trpc.ts              # Client setup for tRPC
-│   │
-│   └── lib/
-│       └── supabaseclient.ts    # Supabase client instance
-│
-└── package.json
-🧠 7. Core tRPC Procedures
+🧠 6. Core tRPC Procedures
 chat.send → Inserts user & AI messages
 
 chat.history → Loads message history by model
 
-chat.clear → Deletes all user messages
+chat.clear → Deletes all user messages with the current selected model.
 
 models.getAvailable → Fetches list of available models
 
@@ -147,7 +115,8 @@ Vercel automatically supports Next.js + tRPC SSR routes.
 
 🧹 Scripts
 Command	Description
-npm run dev	Run development server
+
+npm run dev	    Run development server
 npm run build	Build for production
 npm run start	Run production build
 npm run lint	Check for linting errors
@@ -167,5 +136,3 @@ Add dark mode
 Kamran Sarwar
 Frontend & Full Stack Developer
 Built with ❤️ using Next.js, tRPC & Supabase.
-
-📜 License
