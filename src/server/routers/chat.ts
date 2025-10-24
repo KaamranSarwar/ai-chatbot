@@ -1,10 +1,18 @@
 import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
 import { supabase } from "../../server/supabase";
+import { create } from "domain";
 
 export const chatRouter = router({
   send: publicProcedure
-    .input(z.object({ modelTag: z.string(), msg: z.string(), userId: z.string() }))
+    .input(
+      z.object({
+        modelTag: z.string(),
+        msg: z.string(),
+        userId: z.string(),
+        created_at: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const { modelTag, msg, userId } = input;
 
@@ -13,6 +21,7 @@ export const chatRouter = router({
         model_tag: modelTag,
         role: "user",
         content: msg,
+        created_at: input.created_at || new Date().toISOString(),
       });
 
       const reply = `You said: ${msg}`;
@@ -21,6 +30,7 @@ export const chatRouter = router({
         model_tag: modelTag,
         role: "ai",
         content: reply,
+        created_at: new Date().toISOString(),
       });
 
       return { reply };
@@ -39,21 +49,21 @@ export const chatRouter = router({
     }),
 
   clear: publicProcedure
-  .input(z.object({ userId: z.string(), modelTag: z.string() }))
-  .mutation(async ({ input }) => {
-    const { userId,modelTag } = input;
+    .input(z.object({ userId: z.string(), modelTag: z.string() }))
+    .mutation(async ({ input }) => {
+      const { userId, modelTag } = input;
 
-    const { error } = await supabase
-      .from("messages")
-      .delete()
-      .eq("user_id", userId)
-      .eq("model_tag", modelTag);
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("user_id", userId)
+        .eq("model_tag", modelTag);
 
-    if (error) {
-      console.error("Error clearing chat:", error);
-      throw new Error("Failed to clear chat");
-    }
+      if (error) {
+        console.error("Error clearing chat:", error);
+        throw new Error("Failed to clear chat");
+      }
 
-    return { success: true };
-  }),  
+      return { success: true };
+    }),
 });

@@ -1,39 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseclient";
+import { trpc } from "../../utils/trpcclient"; // 👈 import tRPC hook
 import ChatWindow from "@/components/ChatWindow";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ChatPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [models, setModels] = useState<any[]>([]);
+  const { data: models, isLoading: modelsLoading } =
+    trpc.models.getAvailable.useQuery();
 
   useEffect(() => {
-    async function init() {
+    async function checkSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
         router.push("/auth");
-        return;
       }
-
-      const { data } = await supabase.from("models").select("tag");
-      setModels(data ?? []);
-      setLoading(false);
     }
 
-    init();
+    checkSession();
   }, [router]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  // ✅ Show loading state (for both auth + models)
+  if (modelsLoading) return <LoadingSpinner />;
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <ChatWindow models={models} />
+      <ChatWindow models={models ?? []} />
     </div>
   );
 }

@@ -9,11 +9,11 @@ export default function MessageBubble({
 }: {
   role: string;
   content: string;
-  created_at?: string;
+  created_at: string;
 }) {
   const isUser = role === "user";
 
-  const date = created_at ? new Date(created_at) : new Date();
+  const date = new Date(created_at);
   const formattedTime = format(date, "p");
 
   return (
